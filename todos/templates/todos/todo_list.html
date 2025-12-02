@@ -1,0 +1,170 @@
+{% extends 'todos/base.html' %}
+
+{% block title %}My TODOs{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>My TODOs</h1>
+    <div>
+        <a href="{% url 'todo_create' %}" class="btn btn-primary">+ New TODO</a>
+    </div>
+</div>
+
+<!-- Sorting Options -->
+<div class="mb-3">
+    <label class="me-2"><strong>Sort by:</strong></label>
+    <div class="btn-group" role="group">
+        <a href="{% if current_sort == 'title' %}?sort=-title{% elif current_sort == '-title' %}?{% else %}?sort=title{% endif %}" 
+           class="btn btn-sm {% if current_sort == 'title' or current_sort == '-title' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Name 
+            {% if current_sort == 'title' %}↑{% elif current_sort == '-title' %}↓{% endif %}
+        </a>
+        <a href="{% if current_sort == 'due_date' %}?sort=-due_date{% elif current_sort == '-due_date' %}?{% else %}?sort=due_date{% endif %}" 
+           class="btn btn-sm {% if current_sort == 'due_date' or current_sort == '-due_date' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Due Date 
+            {% if current_sort == 'due_date' %}↑{% elif current_sort == '-due_date' %}↓{% endif %}
+        </a>
+        <a href="{% if current_sort == 'priority' %}?sort=-priority{% elif current_sort == '-priority' %}?{% else %}?sort=priority{% endif %}" 
+           class="btn btn-sm {% if current_sort == 'priority' or current_sort == '-priority' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Priority 
+            {% if current_sort == 'priority' %}↑{% elif current_sort == '-priority' %}↓{% endif %}
+        </a>
+    </div>
+</div>
+
+<!-- Active TODOs Section -->
+<div class="mb-4">
+    <h3 class="mb-3" style="cursor: pointer; user-select: none;" onclick="toggleSection('active-section', 'active-toggle')">
+        <i id="active-toggle" class="bi bi-chevron-down me-2"></i>
+        Active Tasks ({{ todos|length }})
+    </h3>
+    <div id="active-section">
+        {% if todos %}
+            <div class="list-group">
+            {% for todo in todos %}
+                <div class="list-group-item {% if todo.is_resolved %}bg-light{% elif todo.is_overdue %}bg-danger bg-opacity-10 border-danger{% endif %}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="d-flex align-items-start flex-grow-1">
+                            <div class="me-3 mt-1">
+                                <input class="form-check-input" type="checkbox" {% if todo.is_resolved %}checked{% endif %} 
+                                       style="width: 1.5em; height: 1.5em; cursor: pointer;" 
+                                       id="todo-{{ todo.pk }}">
+                            </div>
+                            <form method="post" action="{% url 'todo_toggle' todo.pk %}" style="display: none;" id="form-{{ todo.pk }}">
+                                {% csrf_token %}
+                            </form>
+                            <div class="flex-grow-1">
+                                <label for="todo-{{ todo.pk }}" class="form-check-label w-100" style="cursor: pointer;">
+                                    <h5 class="mb-1 {% if todo.is_resolved %}text-decoration-line-through text-muted{% endif %}">
+                                        {{ todo.title }}
+                                        {% if todo.priority == 'high' %}
+                                            <span class="badge bg-danger ms-2">{{ todo.get_priority_display }}</span>
+                                        {% elif todo.priority == 'medium' %}
+                                            <span class="badge bg-warning text-dark ms-2">{{ todo.get_priority_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary ms-2">{{ todo.get_priority_display }}</span>
+                                        {% endif %}
+                                        {% if todo.is_overdue %}
+                                            <span class="badge bg-danger ms-2">OVERDUE</span>
+                                        {% endif %}
+                                    </h5>
+                                    {% if todo.description %}
+                                        <p class="mb-1 {% if todo.is_resolved %}text-muted{% endif %}">{{ todo.description }}</p>
+                                    {% endif %}
+                                    <small class="{% if todo.is_resolved %}text-muted{% endif %}">
+                                        {% if todo.due_date %}Due: {{ todo.due_date|date:"d/m/Y" }}{% endif %}
+                                    </small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="btn-group ms-3" style="height: fit-content;">
+                            <a href="{% url 'todo_edit' todo.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="{% url 'todo_delete' todo.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">No active TODOs. Create your first one!</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Completed TODOs Section -->
+{% if completed_todos %}
+<div class="mb-4">
+    <h3 class="mb-3" style="cursor: pointer; user-select: none;" onclick="toggleSection('completed-section', 'completed-toggle')">
+        <i id="completed-toggle" class="bi bi-chevron-right me-2"></i>
+        Completed Tasks ({{ completed_todos|length }})
+    </h3>
+    <div class="list-group" id="completed-section" style="display: none;">
+    {% for todo in completed_todos %}
+        <div class="list-group-item bg-light">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="d-flex align-items-start flex-grow-1">
+                    <div class="me-3 mt-1">
+                        <input class="form-check-input" type="checkbox" checked 
+                               style="width: 1.5em; height: 1.5em; cursor: pointer;" 
+                               id="todo-{{ todo.pk }}">
+                    </div>
+                    <form method="post" action="{% url 'todo_toggle' todo.pk %}" style="display: none;" id="form-{{ todo.pk }}">
+                        {% csrf_token %}
+                    </form>
+                    <div class="flex-grow-1">
+                        <label for="todo-{{ todo.pk }}" class="form-check-label w-100" style="cursor: pointer;">
+                            <h5 class="mb-1 text-decoration-line-through text-muted">
+                                {{ todo.title }}
+                                {% if todo.priority == 'high' %}
+                                    <span class="badge bg-danger ms-2">{{ todo.get_priority_display }}</span>
+                                {% elif todo.priority == 'medium' %}
+                                    <span class="badge bg-warning text-dark ms-2">{{ todo.get_priority_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary ms-2">{{ todo.get_priority_display }}</span>
+                                {% endif %}
+                            </h5>
+                            {% if todo.description %}
+                                <p class="mb-1 text-muted">{{ todo.description }}</p>
+                            {% endif %}
+                            <small class="text-muted">
+                                {% if todo.due_date %}Due: {{ todo.due_date|date:"d/m/Y" }} | {% endif %}
+                                <strong>Finished: {{ todo.resolved_at|date:"d/m/Y" }}</strong>
+                            </small>
+                        </label>
+                    </div>
+                </div>
+                <div class="btn-group ms-3" style="height: fit-content;">
+                    <a href="{% url 'todo_edit' todo.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <a href="{% url 'todo_delete' todo.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // Toggle section visibility
+    function toggleSection(sectionId, toggleId) {
+        var section = document.getElementById(sectionId);
+        var toggle = document.getElementById(toggleId);
+        
+        if (section.style.display === 'none') {
+            section.style.display = 'block';
+            toggle.className = 'bi bi-chevron-down me-2';
+        } else {
+            section.style.display = 'none';
+            toggle.className = 'bi bi-chevron-right me-2';
+        }
+    }
+    
+    // Checkbox toggle functionality
+    document.querySelectorAll('.form-check-input').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            var todoId = this.id.split('-')[1];
+            document.getElementById('form-' + todoId).submit();
+        });
+    });
+</script>
+{% endblock %}

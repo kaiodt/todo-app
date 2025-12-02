@@ -1,0 +1,24 @@
+{% extends 'todos/base.html' %}
+
+{% block title %}Welcome - TODO App{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8 text-center">
+        <h1 class="display-4 mb-4">Welcome to TODO App</h1>
+        <p class="lead mb-5">Organize your tasks efficiently with our simple and powerful TODO application.</p>
+        
+        {% if user.is_authenticated %}
+            <div class="alert alert-info">
+                You're already logged in as <strong>{{ user.username }}</strong>
+            </div>
+            <a href="{% url 'todo_list' %}" class="btn btn-primary btn-lg">Go to My TODOs</a>
+        {% else %}
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-4">Login</a>
+                <a href="{% url 'register' %}" class="btn btn-outline-secondary btn-lg px-4">Register</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
